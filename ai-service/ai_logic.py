@@ -17,8 +17,9 @@ class AIServiceLogic:
         if groq_api_key:
             # Use Groq if API key is present (Production / Cloud)
             try:
-                self.llm = ChatGroq(temperature=0, model_name="llama3-70b-8192", api_key=groq_api_key)
-                logger.info("AIServiceLogic initialized with Groq (model=llama3-70b-8192)")
+                # Using Llama 3.3 70B Versatile which is the current recommended model on Groq
+                self.llm = ChatGroq(temperature=0, model_name="llama-3.3-70b-versatile", api_key=groq_api_key)
+                logger.info("AIServiceLogic initialized with Groq (model=llama-3.3-70b-versatile)")
             except Exception as e:
                 logger.error(f"Failed to initialize Groq: {e}. Falling back to Ollama.")
                 self.llm = Ollama(model="llama3", base_url="http://localhost:11434")

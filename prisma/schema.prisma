@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
 }
 
 model User {
@@ -16,8 +16,39 @@ model User {
   updated_at    DateTime  @default(now()) @updatedAt
   quizzes       Quiz[]
   attempts      Attempt[]
+  
+  // Relations for Group/Subject system
+  student_groups Group[]   @relation("StudentGroups")
+  teacher_groups Group[]   @relation("TeacherGroups")
+  subjects_taught Subject[] @relation("TeacherSubjects")
+  
+  assigned_quizzes Quiz[]  @relation("QuizStudents")
 
   @@map("users")
+}
+
+model Group {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  created_at  DateTime @default(now())
+  
+  students    User[]   @relation("StudentGroups")
+  teachers    User[]   @relation("TeacherGroups")
+  
+  allowed_quizzes Quiz[] @relation("QuizGroups")
+  
+  @@map("groups")
+}
+
+model Subject {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  
+  teachers    User[]   @relation("TeacherSubjects")
+  
+  @@map("subjects")
 }
 
 model Quiz {
@@ -28,6 +59,23 @@ model Quiz {
   category     String?
   created_by   String?
   is_published Boolean    @default(false)
+  
+  // Scheduling
+  start_at        DateTime?
+  end_at          DateTime?
+  
+  // Feedback Control
+  feedback_mode   String       @default("immediate") // "immediate", "manual", "scheduled"
+  feedback_at     DateTime?
+
+  // Time Limit (in seconds)
+  time_limit      Int?         // Null = use default (90s * questions)
+
+  // Assignment
+  assign_to_all   Boolean      @default(true)
+  allowed_students User[]    @relation("QuizStudents")
+  allowed_groups   Group[]   @relation("QuizGroups")
+
   created_at   DateTime   @default(now())
   updated_at   DateTime   @default(now()) @updatedAt
   creator      User?      @relation(fields: [created_by], references: [id])

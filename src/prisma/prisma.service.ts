@@ -10,11 +10,16 @@ export class PrismaService
 {
   constructor() {
     // Production: Use Vercel/Supabase Env Vars
-    const connectionString = process.env.POSTGRES_PRISMA_URL || process.env.DATABASE_URL;
+    let connectionString = process.env.POSTGRES_PRISMA_URL || process.env.DATABASE_URL;
     
+    // Force SSL no-verify in the connection string itself
+    if (connectionString && !connectionString.includes('sslmode=no-verify')) {
+       connectionString += connectionString.includes('?') ? '&sslmode=no-verify' : '?sslmode=no-verify';
+    }
+
     const pool = new Pool({ 
       connectionString,
-      ssl: { rejectUnauthorized: false } // Force SSL for Supabase
+      ssl: { rejectUnauthorized: false } // Keep this just in case
     });
     const adapter = new PrismaPg(pool);
     super({ adapter });

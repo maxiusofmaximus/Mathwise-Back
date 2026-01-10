@@ -14,7 +14,7 @@ export class PrismaService
     
     const pool = new Pool({ 
       connectionString,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined
+      ssl: { rejectUnauthorized: false } // Force SSL for Supabase
     });
     const adapter = new PrismaPg(pool);
     super({ adapter });

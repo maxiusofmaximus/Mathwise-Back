@@ -1,0 +1,108 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  password_hash String
+  name          String
+  role          Role
+  created_at    DateTime  @default(now())
+  updated_at    DateTime  @default(now()) @updatedAt
+  quizzes       Quiz[]
+  attempts      Attempt[]
+
+  @@map("users")
+}
+
+model Quiz {
+  id           String     @id @default(uuid())
+  title        String
+  description  String?
+  difficulty   Difficulty?
+  category     String?
+  created_by   String?
+  is_published Boolean    @default(false)
+  created_at   DateTime   @default(now())
+  updated_at   DateTime   @default(now()) @updatedAt
+  creator      User?      @relation(fields: [created_by], references: [id])
+  questions    Question[]
+  attempts     Attempt[]
+
+  @@map("quizzes")
+}
+
+model Question {
+  id              String       @id @default(uuid())
+  quiz_id         String?
+  type            QuestionType
+  content         String
+  expected_answer String
+  explanation     String?
+  tolerance       Decimal?
+  weight          Decimal?     @default(1.0)
+  keywords        Json?
+  order_index     Int?
+  created_at      DateTime     @default(now())
+  quiz            Quiz?        @relation(fields: [quiz_id], references: [id], onDelete: Cascade)
+  attempt_answers AttemptAnswer[]
+
+  @@map("questions")
+}
+
+model Attempt {
+  id              String          @id @default(uuid())
+  user_id         String?
+  quiz_id         String?
+  started_at      DateTime        @default(now())
+  completed_at    DateTime?
+  total_score     Decimal?
+  metadata        Json?
+  created_at      DateTime        @default(now())
+  user            User?           @relation(fields: [user_id], references: [id])
+  quiz            Quiz?           @relation(fields: [quiz_id], references: [id])
+  attempt_answers AttemptAnswer[]
+
+  @@map("attempts")
+}
+
+model AttemptAnswer {
+  id          String    @id @default(uuid())
+  attempt_id  String?
+  question_id String?
+  user_answer String?
+  score       Decimal?
+  feedback    String?
+  answered_at DateTime? @default(now())
+  attempt     Attempt?  @relation(fields: [attempt_id], references: [id])
+  question    Question? @relation(fields: [question_id], references: [id])
+
+  @@map("attempt_answers")
+}
+
+enum Role {
+  editor
+  student
+}
+
+enum Difficulty {
+  easy
+  medium
+  hard
+}
+
+enum QuestionType {
+  open
+  multiple_choice
+  true_false
+  numerical
+  fill_blank
+  order
+  drag_drop
+}

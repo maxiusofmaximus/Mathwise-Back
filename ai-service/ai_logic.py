@@ -1,6 +1,8 @@
 import logging
 import json
+import os
 from langchain_community.llms import Ollama
+from langchain_groq import ChatGroq
 from langchain_core.prompts import PromptTemplate
 
 # Configure logging
@@ -9,9 +11,21 @@ logger = logging.getLogger(__name__)
 
 class AIServiceLogic:
     def __init__(self):
-        # Initialize LLM
-        self.llm = Ollama(model="llama3", base_url="http://localhost:11434")
-        logger.info("AIServiceLogic initialized with Ollama (model=llama3)")
+        # Initialize LLM with Fallback logic
+        groq_api_key = os.getenv("GROQ_API_KEY")
+        
+        if groq_api_key:
+            # Use Groq if API key is present (Production / Cloud)
+            try:
+                self.llm = ChatGroq(temperature=0, model_name="llama3-70b-8192", api_key=groq_api_key)
+                logger.info("AIServiceLogic initialized with Groq (model=llama3-70b-8192)")
+            except Exception as e:
+                logger.error(f"Failed to initialize Groq: {e}. Falling back to Ollama.")
+                self.llm = Ollama(model="llama3", base_url="http://localhost:11434")
+        else:
+            # Fallback to Ollama (Local Development)
+            self.llm = Ollama(model="llama3", base_url="http://localhost:11434")
+            logger.info("AIServiceLogic initialized with Ollama (model=llama3)")
 
     def generate_question(self, topic: str, difficulty: str, question_type: str, count: int = 1):
         logger.info(f"Generating {count} questions for topic={topic}, difficulty={difficulty}, type={question_type}")
@@ -54,6 +68,10 @@ class AIServiceLogic:
         chain = prompt | self.llm
         
         try:
+            # invoke method varies slightly between integrations, but LCEL standardizes it mostly.
+            # ChatGroq returns a BaseMessage, Ollama returns a string.
+            # We need to handle both content types.
+            
             response = chain.invoke({
                 "difficulty": difficulty,
                 "topic": topic,
@@ -61,7 +79,13 @@ class AIServiceLogic:
                 "count": count
             })
             
-            raw_output = response.strip()
+            # Extract content based on response type
+            if hasattr(response, 'content'):
+                raw_output = response.content # For ChatGroq / ChatOpenAI
+            else:
+                raw_output = str(response) # For Ollama (legacy)
+            
+            raw_output = raw_output.strip()
             logger.info(f"LLM Raw Output: {raw_output}")
             
             clean_output = raw_output.replace("```json", "").replace("```", "").strip()
@@ -106,7 +130,12 @@ class AIServiceLogic:
                 "tolerance": tolerance
             })
             
-            raw_output = response.strip()
+            if hasattr(response, 'content'):
+                raw_output = response.content
+            else:
+                raw_output = str(response)
+                
+            raw_output = raw_output.strip()
             logger.info(f"LLM Evaluation Output: {raw_output}")
             
             clean_output = raw_output.replace("```json", "").replace("```", "").strip()

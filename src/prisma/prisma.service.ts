@@ -1,7 +1,6 @@
 import { Injectable, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { PrismaBetterSqlite3 } from '@prisma/adapter-better-sqlite3';
 import { Pool } from 'pg';
 
 @Injectable()
@@ -10,13 +9,14 @@ export class PrismaService
   implements OnModuleInit, OnModuleDestroy
 {
   constructor() {
-    // For local development with SQLite, we simplify this to avoid conflicts with Vercel config for now.
-    // The previous complex logic was causing issues with Prisma Client initialization in local mode.
-    // We will stick to SQLite for local dev as requested.
+    // Production: Use Vercel/Supabase Env Vars
+    const connectionString = process.env.POSTGRES_PRISMA_URL || process.env.DATABASE_URL;
     
-    const adapter = new PrismaBetterSqlite3({
-      url: 'file:./dev.db',
+    const pool = new Pool({ 
+      connectionString,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : undefined
     });
+    const adapter = new PrismaPg(pool);
     super({ adapter });
   }
 

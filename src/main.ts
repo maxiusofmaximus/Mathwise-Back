@@ -5,7 +5,17 @@ import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.enableCors(); // Enable CORS for frontend access
+  
+  app.enableCors({
+    origin: [
+      'http://localhost:3000',
+      'https://mathwise-seven.vercel.app',
+      'https://mathwise-front.vercel.app'
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  });
 
   // Swagger Configuration
   const config = new DocumentBuilder()

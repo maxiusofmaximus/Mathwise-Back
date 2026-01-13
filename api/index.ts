@@ -28,7 +28,7 @@ const createNestServer = async (expressInstance: express.Express) => {
 
 export default async function handler(req, res) {
   if (!cachedServer) {
-    const server = express();
+    const server = express.default();
     await createNestServer(server);
     cachedServer = server;
   }

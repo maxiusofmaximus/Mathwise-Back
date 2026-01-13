@@ -10,6 +10,6 @@ export default defineConfig({
   },
   datasource: {
     // Vercel/Supabase uses POSTGRES_PRISMA_URL for pooling
-    url: process.env.POSTGRES_PRISMA_URL || process.env.DATABASE_URL,
+    url: (globalThis as any).process?.env?.POSTGRES_PRISMA_URL || (globalThis as any).process?.env?.DATABASE_URL,
   },
 });

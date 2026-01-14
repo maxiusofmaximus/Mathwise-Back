@@ -30,8 +30,12 @@ export class PrismaService
       await this.$queryRaw`SELECT 1`;
       this.logger.log('Database connection established successfully');
     } catch (error) {
-      this.logger.error('Failed to connect to database', error);
-      throw error;
+      // In Serverless environments, we should not crash the process on init,
+      // but rather let the request fail so we can return a proper 500 error with CORS headers.
+      this.logger.error('Failed to connect to database during initialization', error);
+      
+      // We do NOT rethrow here to allow the NestJS app to bootstrap.
+      // The first actual DB request will fail and be caught by the ExceptionFilter.
     }
   }
 
